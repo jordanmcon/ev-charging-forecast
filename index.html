@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV Charging Station Forecaster</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #FFFFFF;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: #28282D;
+            padding: 30px 0;
+            margin-bottom: 40px;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+        }
+
+        .logo-symbol {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 24px;
+            color: #28282D;
+        }
+
+        .logo-text {
+            font-size: 1.5em;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            color: #28282D;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            color: #69696C;
+            font-weight: 400;
+        }
+
+        .input-card {
+            background: white;
+            border: 2px solid #E9E9EA;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #28282D;
+            font-size: 0.95em;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #D4D4D5;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: Arial, Helvetica, sans-serif;
+            transition: border-color 0.2s;
+            background: white;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #28282D;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 16px 32px;
+            background: #28282D;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background: #3E3E42;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 2px solid #E9E9EA;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+
+        .stat-card:hover {
+            border-color: #F8B918;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #69696C;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #28282D;
+            margin-bottom: 4px;
+        }
+
+        .stat-value.highlight {
+            color: #F8B918;
+        }
+
+        .stat-subtext {
+            font-size: 0.85em;
+            color: #A9A9AB;
+            margin-top: 8px;
+        }
+
+        .chart-card {
+            background: white;
+            border: 2px solid #E9E9EA;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #28282D;
+        }
+
+        canvas {
+            max-width: 100%;
+        }
+
+        .roi-breakdown {
+            background: white;
+            border: 2px solid #E9E9EA;
+            border-radius: 12px;
+            padding: 30px;
+        }
+
+        .roi-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 16px 0;
+            border-bottom: 1px solid #E9E9EA;
+            color: #28282D;
+        }
+
+        .roi-item:last-child {
+            border-bottom: none;
+            font-weight: 700;
+            font-size: 1.15em;
+            padding-top: 20px;
+            margin-top: 8px;
+            border-top: 2px solid #28282D;
+        }
+
+        .comparable-stations {
+            background: white;
+            border: 2px solid #E9E9EA;
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        .station-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: #F2F2F7;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .station-name {
+            font-weight: 600;
+            color: #28282D;
+        }
+
+        .station-sessions {
+            color: #F8B918;
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+
+        .methodology {
+            background: #28282D;
+            border-radius: 12px;
+            padding: 30px;
+            color: white;
+            margin-top: 20px;
+        }
+
+        .methodology h3 {
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .methodology p {
+            line-height: 1.6;
+            opacity: 0.9;
+            color: #D4D4D5;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border: 2px solid #E9E9EA;
+            border-radius: 12px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #E9E9EA;
+            border-top: 4px solid #F8B918;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            background: #28282D;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 18px;
+            font-size: 12px;
+            cursor: help;
+            margin-left: 5px;
+        }
+
+        .config-info {
+            background: #F2F2F7;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #F8B918;
+        }
+
+        .config-label {
+            font-weight: 600;
+            color: #28282D;
+            margin-bottom: 6px;
+            font-size: 0.9em;
+        }
+
+        .config-details {
+            font-size: 0.95em;
+            color: #535357;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 0 20px;
+        }
+
+        .fine-tune-section {
+            background: white;
+            border: 2px solid #E9E9EA;
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        .fine-tune-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .input-hint {
+            font-size: 0.85em;
+            color: #A9A9AB;
+            margin-top: 6px;
+        }
+
+        #buyNowBtn:hover {
+            background: #F59C0D;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(248, 185, 24, 0.4);
+        }
+
+        #buyNowBtn:active {
+            transform: translateY(0);
+        }
+
+        .cta-section {
+            background: white;
+            border: 2px solid #E9E9EA;
+            border-radius: 12px;
+            padding: 48px 30px;
+            margin-top: 30px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <svg width="180" height="50" viewBox="0 0 980 270" xmlns="http://www.w3.org/2000/svg">
+                    <g>
+                        <path fill="#fff" d="M352.53,90h15.96v88.99h-15.96v-88.99Z"/>
+                        <path fill="#fff" d="M436.58,132.49c-2.31-5.53-5.93-9.89-10.87-13.07-4.95-3.18-10.81-4.78-17.6-4.78-6.12,0-11.61,1.4-16.47,4.21-4.86,2.81-8.63,6.68-11.31,11.63-2.68,4.95-4.02,10.56-4.02,16.84s1.34,11.92,4.02,16.91c2.68,4.99,6.49,8.86,11.44,11.63,4.94,2.76,10.64,4.15,17.09,4.15,5.28,0,9.97-.9,14.08-2.7,4.11-1.8,7.46-4.36,10.06-7.67,2.6-3.31,4.32-7.1,5.15-11.38h-16.09c-.67,2.6-2.18,4.67-4.53,6.22-2.35,1.55-5.28,2.33-8.8,2.33s-6.31-.77-8.86-2.33c-2.56-1.55-4.55-3.81-5.97-6.79-.98-2.04-1.61-4.37-1.92-6.98h46.54c1.01-6.62.36-12.7-1.95-18.23ZM392.65,138.9c.27-1.1.6-2.13,1-3.08,1.26-2.97,3.1-5.19,5.53-6.66,2.43-1.47,5.41-2.2,8.92-2.2,2.68,0,5.09.5,7.23,1.51,2.14,1.01,3.79,2.41,4.97,4.21,1.17,1.8,1.8,3.88,1.89,6.22h-29.54Z"/>
+                        <path fill="#fff" d="M459.97,175.79c-4.9-2.81-8.76-6.7-11.56-11.69-2.81-4.98-4.21-10.62-4.21-16.91s1.38-11.77,4.15-16.72c2.77-4.94,6.6-8.82,11.5-11.63,4.9-2.81,10.45-4.21,16.65-4.21,5.7,0,10.7.99,15.02,2.95,4.32,1.97,7.73,4.8,10.24,8.48,2.51,3.69,4.1,8,4.78,12.95h-15.96c-.67-3.27-2.26-5.89-4.78-7.86-2.51-1.97-5.57-2.95-9.18-2.95-3.1,0-5.89.8-8.36,2.39-2.47,1.59-4.42,3.83-5.84,6.72-1.43,2.89-2.14,6.18-2.14,9.87s.71,7,2.14,9.93c1.42,2.93,3.39,5.22,5.91,6.85,2.51,1.63,5.28,2.45,8.3,2.45,3.85,0,7.06-.96,9.62-2.89,2.55-1.93,4.13-4.57,4.71-7.92h15.96c-.67,4.61-2.35,8.76-5.03,12.44-2.68,3.69-6.2,6.6-10.56,8.74-4.36,2.14-9.26,3.21-14.71,3.21-6.2,0-11.75-1.4-16.65-4.21Z"/>
+                        <path fill="#fff" d="M545.7,165.8c-1.26.25-2.43.38-3.52.38-2.68,0-4.78-.84-6.28-2.51-1.51-1.68-2.26-4.06-2.26-7.16v-27.9h14.96v-12.95h-14.96v-15.46h-15.96v15.46h-10.18v12.95h10.18v29.29c0,4.69.94,8.69,2.83,12,1.89,3.31,4.54,5.83,7.98,7.54,3.44,1.72,7.29,2.58,11.56,2.58,1.68,0,3.27-.13,4.78-.38,1.51-.25,2.93-.67,4.27-1.26v-13.45c-1.01.34-2.14.63-3.39.88Z"/>
+                        <path fill="#fff" d="M555.83,115.64h15.84v8.55c1.84-2.85,4.46-5.15,7.86-6.91,3.39-1.76,6.98-2.64,10.75-2.64,2.93,0,5.32.42,7.16,1.26v15.08c-1.43-.59-2.85-.98-4.27-1.19-1.43-.21-2.81-.31-4.15-.31-3.27,0-6.18.9-8.74,2.7-2.56,1.8-4.63,4.63-6.22,8.48-1.59,3.86-2.39,8.63-2.39,14.33v24.01h-15.84v-63.35Z"/>
+                        <path fill="#fff" d="M642.39,175.79c-4.9-2.81-8.76-6.7-11.56-11.69-2.81-4.98-4.21-10.62-4.21-16.91s1.38-11.77,4.15-16.72c2.77-4.94,6.6-8.82,11.5-11.63,4.9-2.81,10.45-4.21,16.65-4.21,5.7,0,10.7.99,15.02,2.95,4.32,1.97,7.73,4.8,10.24,8.48,2.51,3.69,4.1,8,4.78,12.95h-15.96c-.67-3.27-2.26-5.89-4.78-7.86-2.51-1.97-5.57-2.95-9.18-2.95-3.1,0-5.89.8-8.36,2.39-2.47,1.59-4.42,3.83-5.84,6.72-1.43,2.89-2.14,6.18-2.14,9.87s.71,7,2.14,9.93c1.42,2.93,3.39,5.22,5.91,6.85,2.51,1.63,5.28,2.45,8.3,2.45,3.85,0,7.06-.96,9.62-2.89,2.55-1.93,4.13-4.57,4.71-7.92h15.96c-.67,4.61-2.35,8.76-5.03,12.44-2.68,3.69-6.2,6.6-10.56,8.74-4.36,2.14-9.26,3.21-14.71,3.21-6.2,0-11.75-1.4-16.65-4.21Z"/>
+                        <polygon fill="#fff" points="302.43 164.41 302.43 142.29 319.84 142.29 328.26 127.71 302.43 127.71 302.43 105.59 337.12 105.59 345.54 91.01 285.33 91.01 285.33 178.99 337.12 178.99 345.54 164.41 302.43 164.41"/>
+                        <path fill="#fff" d="M790.63,115.64h15.84v8.55c1.84-2.85,4.46-5.15,7.86-6.91,3.39-1.76,6.98-2.64,10.75-2.64,2.93,0,5.32.42,7.16,1.26v15.08c-1.43-.59-2.85-.98-4.27-1.19-1.43-.21-2.81-.31-4.15-.31-3.27,0-6.18.9-8.74,2.7-2.56,1.8-4.63,4.63-6.22,8.48-1.59,3.86-2.39,8.63-2.39,14.33v24.01h-15.84v-63.35Z"/>
+                        <path fill="#fff" d="M886.54,126.14c-2.31-3.73-5.55-6.58-9.74-8.55-4.19-1.97-9.05-2.95-14.58-2.95-5.03,0-9.55.99-13.58,2.95-4.02,1.97-7.25,4.67-9.68,8.11-2.43,3.44-3.94,7.25-4.53,11.44h15.71c.33-2.18,1.01-4.02,2.01-5.53,1.01-1.51,2.37-2.66,4.09-3.46,1.72-.8,3.71-1.19,5.97-1.19,2.43,0,4.55.42,6.35,1.26,1.8.84,3.18,2.07,4.15,3.71.96,1.63,1.44,3.54,1.44,5.72v1.4l-12.32,1.24c-6.45.67-11.73,1.87-15.84,3.58-4.11,1.72-7.12,4.02-9.05,6.91-1.93,2.89-2.89,6.43-2.89,10.62,0,3.6.92,6.81,2.77,9.62,1.84,2.81,4.4,5.01,7.67,6.6,3.27,1.59,7.12,2.39,11.56,2.39,4.02,0,7.71-.86,11.06-2.58,3.35-1.72,5.7-3.87,7.04-6.47v8.04h15.84v-39.22c0-5.36-1.15-9.91-3.46-13.64ZM872.28,159.7c-1.26,2.47-3.02,4.44-5.28,5.91-2.26,1.47-4.86,2.2-7.79,2.2s-5.11-.65-6.79-1.95c-1.68-1.3-2.51-3-2.51-5.09,0-1.84.44-3.33,1.32-4.46.88-1.13,2.22-2.05,4.02-2.77,1.8-.71,4.21-1.24,7.23-1.57l11.69-1.46v.83c0,3.1-.63,5.89-1.88,8.36Z"/>
+                        <polygon fill="#fff" points="741.77 164.41 741.77 142.29 759.18 142.29 767.6 127.71 741.77 127.71 741.77 105.59 776.46 105.59 784.88 91.01 724.67 91.01 724.67 178.99 776.46 178.99 784.88 164.41 741.77 164.41"/>
+                        <path fill="#fff" d="M603.23,115.64h15.96v63.35h-15.96v-63.35ZM601.66,97.04c0,5.26,4.27,9.52,9.55,9.52s9.55-4.26,9.55-9.52c0-5.26-4.27-9.52-9.55-9.52-5.27,0-9.55,4.26-9.55,9.52Z"/>
+                    </g>
+                    <path fill="#fff" d="M155.38,135c0,5.26-4.27,9.52-9.55,9.52s-9.55-4.26-9.55-9.52,4.27-9.52,9.55-9.52,9.55,4.26,9.55,9.52ZM184.62,135c0,5.26,4.27,9.52,9.55,9.52s9.55-4.26,9.55-9.52-4.27-9.52-9.55-9.52c-5.27,0-9.55,4.26-9.55,9.52ZM205,90h-23.35l-9.84,17.03h33.19c16.99,0,27.97,10.98,27.97,27.97s-10.98,27.97-27.97,27.97h-17.14l-9.84,17.03h26.98c26.4,0,45-18.6,45-45s-18.6-45-45-45ZM135,162.97c-16.99,0-27.97-10.98-27.97-27.97s10.98-27.97,27.97-27.97h17.14l9.84-17.03h-26.98c-26.4,0-45,18.6-45,45s18.6,45,45,45h23.35l9.84-17.03h-33.19Z"/>
+                </svg>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>EV Charging Station Forecaster</h1>
+            <p class="subtitle">Predict charging sessions, growth, and ROI for your location</p>
+        </div>
+
+        <div class="input-card">
+            <form id="forecastForm">
+                <div class="form-group">
+                    <label for="address">Site Address</label>
+                    <input type="text" id="address" placeholder="123 Main Street, San Francisco, CA" required>
+                </div>
+
+                <div class="config-info">
+                    <div class="config-label">Station Configuration</div>
+                    <div class="config-details">Level 3 DC Fast Charging (200+ kW) • 4 Chargers • $0.50/kWh</div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit">Generate Forecast</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="color: #28282D; font-weight: 600;">Analyzing location and comparable stations...</p>
+        </div>
+
+        <div class="error-message" id="errorMessage" style="display: none;">
+            <div style="background: white; border: 2px solid #E9E9EA; border-radius: 12px; padding: 48px 30px; text-align: center; max-width: 600px; margin: 0 auto;">
+                <div style="font-size: 3em; margin-bottom: 16px;">⚠️</div>
+                <h3 style="font-size: 1.8em; color: #28282D; font-weight: 600; margin-bottom: 12px;" id="errorTitle">Error</h3>
+                <p style="color: #69696C; font-size: 1.05em; margin-bottom: 24px;" id="errorDescription">An error occurred.</p>
+                <button onclick="document.getElementById('errorMessage').style.display='none'; document.getElementById('address').focus();" style="background: #28282D; color: white; padding: 14px 32px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none;">
+                    Try Another Address
+                </button>
+            </div>
+        </div>
+
+        <div class="results" id="results">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Current Forecast</div>
+                    <div class="stat-value" id="dailySessions">--</div>
+                    <div class="stat-subtext">sessions per day</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Year 1 Total</div>
+                    <div class="stat-value" id="year1Total">--</div>
+                    <div class="stat-subtext">annual sessions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Year 10 Total</div>
+                    <div class="stat-value" id="year10Total">--</div>
+                    <div class="stat-subtext">annual sessions</div>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3 class="chart-title">Site Location</h3>
+                <div id="map" style="height: 400px; border-radius: 8px; overflow: hidden;"></div>
+                <p style="margin-top: 12px; font-size: 0.9em; color: #69696C;">
+                    <strong id="mapAddress"></strong> • 1-mile radius shown
+                </p>
+            </div>
+
+            <div class="chart-card">
+                <h3 class="chart-title">10-Year Session Projection</h3>
+                <canvas id="projectionChart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3 class="chart-title">Revenue Forecast (10 Years)</h3>
+                <canvas id="revenueChart"></canvas>
+            </div>
+
+            <div class="stats-grid" style="margin-bottom: 20px;">
+                <div class="stat-card">
+                    <div class="stat-label">10-Year IRR</div>
+                    <div class="stat-value highlight" id="irr">--</div>
+                    <div class="stat-subtext">internal rate of return</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Payback Period</div>
+                    <div class="stat-value" id="payback">--</div>
+                    <div class="stat-subtext">years</div>
+                </div>
+            </div>
+
+            <div class="roi-breakdown">
+                <h3 class="chart-title">ROI Breakdown</h3>
+                <div class="roi-item">
+                    <span>Initial Investment</span>
+                    <span id="roiInvestment">$0</span>
+                </div>
+                <div class="roi-item">
+                    <span>10-Year Revenue</span>
+                    <span id="roiRevenue">$0</span>
+                </div>
+                <div class="roi-item">
+                    <span>10-Year Operating Costs</span>
+                    <span id="roiCosts">$0</span>
+                </div>
+                <div class="roi-item">
+                    <span>10-Year Net Profit</span>
+                    <span id="roiProfit">$0</span>
+                </div>
+                <div class="roi-item">
+                    <span>Return on Investment (ROI)</span>
+                    <span id="roiPercent">0%</span>
+                </div>
+            </div>
+
+            <div class="comparable-stations">
+                <h3 class="chart-title">Comparable Stations Used in Analysis</h3>
+                <p style="color: #69696C; margin-bottom: 20px; font-size: 0.9em;">
+                    These existing stations have similar characteristics to your proposed location and inform our forecast.
+                </p>
+                <div id="comparableList"></div>
+            </div>
+
+            <div class="fine-tune-section">
+                <div class="fine-tune-header">
+                    <h3 class="chart-title">Fine-Tune Your Forecast</h3>
+                    <p style="color: #69696C; margin-bottom: 12px; font-size: 0.9em;">
+                        Adjust these parameters to see how they impact your ROI
+                    </p>
+                    <p style="background: #FEF1D1; border-left: 4px solid #F8B918; padding: 12px 16px; border-radius: 6px; font-size: 0.9em; color: #535357; margin-bottom: 20px;">
+                        <strong>Note:</strong> The initial forecast above uses default conservative assumptions. These advanced inputs were not considered in your initial results.
+                    </p>
+                </div>
+                
+                <form id="fineTuneForm">
+                    <div class="fine-tune-grid">
+                        <div class="form-group">
+                            <label for="retailBasketFT">Retail Basket Size ($)</label>
+                            <input type="number" id="retailBasketFT" value="12" step="0.50" min="0">
+                            <div class="input-hint">Average in-store purchase per charging session</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="retailConversionFT">In-Store Conversion (%)</label>
+                            <input type="number" id="retailConversionFT" value="40" min="0" max="100">
+                            <div class="input-hint">Percentage of EV customers who shop inside</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="demandChargeFT">Demand Charge ($/kW-month)</label>
+                            <input type="number" id="demandChargeFT" value="0" step="1" min="0" max="50">
+                            <div class="input-hint">Utility demand charge rate (varies by state/utility)</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="grantEligibleFT">Grant Eligible?</label>
+                            <select id="grantEligibleFT">
+                                <option value="no">No</option>
+                                <option value="yes">Yes (25% CapEx reduction)</option>
+                            </select>
+                            <div class="input-hint">Eligible if you own property, in rural/underserved area</div>
+                        </div>
+                    </div>
+
+                    <div class="button-group" style="margin-top: 24px;">
+                        <button type="submit">Update Forecast</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="methodology">
+                <h3>📊 How This Works</h3>
+                <p>
+                    Our forecast analyzes your proposed <strong>Level 3 DC Fast Charging site (200+ kW, 4 chargers)</strong> 
+                    using your in-house Paren EV session data to identify comparable charging stations 
+                    with similar demographics, traffic patterns, and location characteristics. We then apply 
+                    regional EV adoption growth rates (averaging 10% annual growth) to project future demand. 
+                    The ROI calculation includes tiered CapEx based on utilization, Section 48E tax credits ($65k), 
+                    optional grant eligibility (25% CapEx reduction), incremental retail revenue from in-store 
+                    purchases, battery-enabled demand charge mitigation (70%), and comprehensive operating costs. 
+                    Financial metrics include IRR, payback period, and 10-year net profit projections.
+                </p>
+            </div>
+
+            <div class="cta-section">
+                <h3 style="font-size: 1.8em; color: #28282D; font-weight: 600; margin-bottom: 12px; text-align: center;">Ready to Move Forward?</h3>
+                <p style="color: #69696C; font-size: 1.05em; text-align: center; margin-bottom: 24px;">
+                    Get a detailed quote based on your forecast and start your EV charging station project.
+                </p>
+                <div style="text-align: center;">
+                    <button id="buyNowBtn" style="background: #F8B918; color: #28282D; padding: 18px 48px; border-radius: 8px; font-weight: 700; font-size: 1.15em; cursor: pointer; border: none; transition: all 0.2s; box-shadow: 0 4px 12px rgba(248, 185, 24, 0.3);">
+                        Get a Quote →
+                    </button>
+                </div>
+                <p style="color: #A9A9AB; font-size: 0.85em; text-align: center; margin-top: 16px;">
+                    Your personalized quote will be generated instantly and downloaded to your device.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // ROI calculation based on your Google Sheets model
+        function generateForecast(address, stationType, numChargers, pricing, retailBasket = 12, retailConversion = 0.40, grantEligible = false, demandCharge = 0) {
+            // INTEGRATION POINT: Replace this with actual API call to your Paren tool
+            // Example: const response = await fetch('/api/forecast', { method: 'POST', body: ... })
+            
+            // Mock comparable stations (your tool will return real ones)
+            const comparableStations = [
+                { name: "Downtown Plaza Station", distance: "2.3 mi", sessions: 47 },
+                { name: "Metro Center Charging Hub", distance: "3.1 mi", sessions: 52 },
+                { name: "Riverside Shopping Center", distance: "4.5 mi", sessions: 41 },
+                { name: "Tech Campus Station", distance: "5.2 mi", sessions: 38 },
+                { name: "University District Hub", distance: "6.1 mi", sessions: 44 }
+            ];
+
+            // Calculate baseline from comparable stations (your tool does this)
+            const avgSessions = comparableStations.reduce((sum, s) => sum + s.sessions, 0) / comparableStations.length;
+            const baselineDailySessions = Math.round(avgSessions);
+            
+            // === CAPEX CALCULATION (from your spreadsheet) ===
+            // Tiered pricing based on sessions per day
+            let hardwareCapEx, constructionCost, softwareOM;
+            
+            if (baselineDailySessions < 30) {
+                // 4 stalls tier
+                hardwareCapEx = 333650;
+                constructionCost = 180000;
+                softwareOM = 42000;
+            } else if (baselineDailySessions < 60) {
+                // 6 stalls tier
+                hardwareCapEx = 433650;
+                constructionCost = 180000;
+                softwareOM = 63000;
+            } else {
+                // 8+ stalls tier
+                hardwareCapEx = 579000;
+                constructionCost = 180000;
+                softwareOM = 84000;
+            }
+            
+            const totalCapEx = hardwareCapEx + constructionCost;
+            
+            // Section 48E Tax Credit
+            const section48E = 65000;
+            
+            // Grant eligibility (25% of CapEx if eligible - from user input)
+            const grantAmount = grantEligible ? totalCapEx * 0.25 : 0;
+            
+            const netCapEx = totalCapEx - section48E - grantAmount;
+            
+            // === OPEX & REVENUE PARAMETERS (from your spreadsheet) ===
+            const energyPriceCost = 0.09; // $/kWh cost
+            const energyPriceCustomer = pricing; // $/kWh billed (user input)
+            const roundTripEfficiency = 0.15; // 15% loss
+            const avgKWhPerSession = 35; // from your sheet
+            const uptime = 0.995; // 99.5%
+            const avgPeakPower = 109.5; // kW
+            const demandChargeMitigation = 0.70; // 70% reduction via battery
+            
+            // Retail revenue parameters (from user inputs and spreadsheet)
+            const retailBasketSize = retailBasket;
+            const inStoreConversion = retailConversion;
+            const loyaltySignUpValue = 0;
+            const loyaltyConversion = 0.05; // 5%
+            const avgRetailMargin = 0.30; // 30%
+            
+            // Growth rates (from your sheet)
+            const kwhGrowthRate = 0.10; // 10% YoY session/kWh growth
+            const priceInflation = 0.03; // 3% price inflation
+            const netProfitGrowthRate = 0.133; // Derived from model
+            
+            // === 10-YEAR PROJECTION ===
+            const projections = [];
+            const revenues = [];
+            const cashFlows = [];
+            
+            // Year 0 = initial investment
+            cashFlows.push(-netCapEx);
+            
+            for (let year = 1; year <= 10; year++) {
+                // Sessions growth (10% YoY)
+                const yearSessions = baselineDailySessions * 365 * Math.pow(1 + kwhGrowthRate, year - 1);
+                projections.push(Math.round(yearSessions));
+                
+                // kWh delivered (accounting for uptime)
+                const kWhDelivered = yearSessions * avgKWhPerSession * uptime;
+                
+                // Adjust energy prices for inflation
+                const adjustedEnergyPriceCustomer = energyPriceCustomer * Math.pow(1 + priceInflation, year - 1);
+                const adjustedEnergyCost = energyPriceCost * Math.pow(1 + priceInflation, year - 1);
+                
+                // REVENUE STREAMS
+                // 1. Charging revenue
+                const chargingRevenue = kWhDelivered * adjustedEnergyPriceCustomer;
+                
+                // 2. Incremental retail revenue (sessions × conversion × basket size)
+                const incrementalRetailRevenue = yearSessions * inStoreConversion * retailBasketSize;
+                
+                // 3. Loyalty sign-ups revenue
+                const loyaltyRevenue = yearSessions * loyaltyConversion * loyaltySignUpValue;
+                
+                // 4. Retail margin uplift (100% of loyalty + margin on retail)
+                const retailUplift = loyaltyRevenue + (incrementalRetailRevenue * avgRetailMargin);
+                
+                const totalRevenue = chargingRevenue + retailUplift;
+                revenues.push(Math.round(totalRevenue));
+                
+                // COSTS
+                // 1. Energy costs (with efficiency loss)
+                const chargingCost = (kWhDelivered * (1 + roundTripEfficiency)) * adjustedEnergyCost;
+                
+                // 2. Demand charges (with mitigation)
+                const monthlyDemandCharge = avgPeakPower * demandCharge;
+                const annualDemandCharge = monthlyDemandCharge * 12 * (1 - demandChargeMitigation);
+                
+                // 3. Software + O&M (fixed annual)
+                const totalOpEx = chargingCost + annualDemandCharge + softwareOM;
+                
+                // Net cash flow
+                const netCashFlow = totalRevenue - totalOpEx;
+                cashFlows.push(netCashFlow);
+            }
+            
+            // === IRR CALCULATION ===
+            // Using Newton's method to solve for IRR
+            function calculateIRR(cashFlows, guess = 0.1) {
+                const maxIterations = 1000;
+                const tolerance = 0.00001;
+                
+                for (let i = 0; i < maxIterations; i++) {
+                    let npv = 0;
+                    let dnpv = 0;
+                    
+                    for (let t = 0; t < cashFlows.length; t++) {
+                        npv += cashFlows[t] / Math.pow(1 + guess, t);
+                        dnpv -= t * cashFlows[t] / Math.pow(1 + guess, t + 1);
+                    }
+                    
+                    const newGuess = guess - npv / dnpv;
+                    
+                    if (Math.abs(newGuess - guess) < tolerance) {
+                        return newGuess;
+                    }
+                    
+                    guess = newGuess;
+                }
+                
+                return guess;
+            }
+            
+            const irr = calculateIRR(cashFlows);
+            
+            // === PAYBACK PERIOD ===
+            let cumulativeCashFlow = -netCapEx;
+            let paybackYears = null;
+            
+            for (let i = 1; i < cashFlows.length; i++) {
+                cumulativeCashFlow += cashFlows[i];
+                if (paybackYears === null && cumulativeCashFlow >= 0) {
+                    // Linear interpolation for fractional year
+                    const previousCumulative = cumulativeCashFlow - cashFlows[i];
+                    const fraction = -previousCumulative / cashFlows[i];
+                    paybackYears = (i - 1) + fraction;
+                    break;
+                }
+            }
+            
+            if (paybackYears === null) {
+                paybackYears = 10; // Beyond analysis window
+            }
+            
+            // === SUMMARY METRICS ===
+            const totalRevenue = revenues.reduce((a, b) => a + b, 0);
+            const totalOperatingCosts = cashFlows.slice(1).reduce((sum, cf, idx) => sum + (revenues[idx] - cf), 0);
+            const netProfit = cashFlows.slice(1).reduce((a, b) => a + b, 0);
+            const simpleROI = ((netProfit / netCapEx) * 100).toFixed(1);
+            
+            return {
+                dailySessions: baselineDailySessions,
+                year1Total: projections[0],
+                year10Total: projections[9],
+                paybackYears: paybackYears.toFixed(1),
+                projections: projections,
+                revenues: revenues,
+                comparableStations: comparableStations,
+                roi: {
+                    investment: netCapEx,
+                    revenue: totalRevenue,
+                    costs: totalOperatingCosts,
+                    profit: netProfit,
+                    percent: simpleROI,
+                    irr: (irr * 100).toFixed(1)
+                }
+            };
+        }
+
+        // Format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        // Format number with commas
+        function formatNumber(num) {
+            return new Intl.NumberFormat('en-US').format(num);
+        }
+
+        let projectionChart = null;
+        let revenueChart = null;
+        let map = null;
+        let lastAddress = '';
+        let lastForecastData = null;
+
+        // Display map with address location and 1-mile radius
+        async function displayMap(address) {
+            // Geocode the address using OpenStreetMap Nominatim (free, no API key needed)
+            const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+            
+            try {
+                const response = await fetch(geocodeUrl);
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+                    
+                    // Update address display
+                    document.getElementById('mapAddress').textContent = data[0].display_name;
+                    
+                    // Initialize or update map
+                    if (map) {
+                        map.remove();
+                    }
+                    
+                    map = L.map('map').setView([lat, lon], 11);
+                    
+                    // Add OpenStreetMap tiles
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors',
+                        maxZoom: 19
+                    }).addTo(map);
+                    
+                    // Add marker for the site location with Electric Era branding
+                    const customIcon = L.divIcon({
+                        className: 'custom-marker',
+                        html: '<div style="background: #F8B918; width: 24px; height: 24px; border-radius: 50%; border: 3px solid #28282D; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    });
+                    
+                    L.marker([lat, lon], { icon: customIcon }).addTo(map)
+                        .bindPopup('<strong>Proposed Site</strong><br>' + address);
+                    
+                    // Add 1-mile radius circle (1 mile = 1609.34 meters)
+                    L.circle([lat, lon], {
+                        radius: 1609.34,
+                        color: '#28282D',
+                        fillColor: '#F8B918',
+                        fillOpacity: 0.1,
+                        weight: 2,
+                        dashArray: '5, 5'
+                    }).addTo(map);
+                    
+                    return true; // Success
+                } else {
+                    console.error('Address not found');
+                    return false; // Location not found
+                }
+            } catch (error) {
+                console.error('Geocoding error:', error);
+                return false; // Error occurred
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('forecastForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const address = document.getElementById('address').value;
+            // Fixed configuration: Level 3 DCFC, 4 chargers, $0.50/kWh
+            const stationType = 'dcfc';
+            const numChargers = 4;
+            const pricing = 0.50;
+            // Fixed retail assumptions
+            const retailBasket = 12;
+            const retailConversion = 0.40; // 40%
+            const grantEligible = false; // No grant funding
+
+            // Show loading
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('errorMessage').style.display = 'none';
+
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Generate forecast
+            const forecast = generateForecast(address, stationType, numChargers, pricing, retailBasket, retailConversion, grantEligible, 0);
+
+            // Store for fine-tuning
+            lastAddress = address;
+            lastForecastData = forecast;
+
+            // Geocode the address and display map
+            const locationFound = await displayMap(address);
+
+            // Check for errors
+            if (!locationFound) {
+                // Location not found error
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('errorTitle').textContent = 'Location Not Found';
+                document.getElementById('errorDescription').textContent = 'We couldn\'t find the address you entered. Please check the address and try again, or try a nearby landmark or intersection.';
+                document.getElementById('errorMessage').style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            // Check if payback period is greater than 10 years
+            if (parseFloat(forecast.paybackYears) > 10) {
+                // Insufficient data / poor ROI
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('errorTitle').textContent = 'Insufficient Data';
+                document.getElementById('errorDescription').textContent = 'Our forecast shows this location may not have sufficient EV charging demand to generate a positive return within 10 years. Please try a different location with higher traffic or EV adoption.';
+                document.getElementById('errorMessage').style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            // Update stats
+            document.getElementById('dailySessions').textContent = forecast.dailySessions;
+            document.getElementById('year1Total').textContent = formatNumber(forecast.year1Total);
+            document.getElementById('year10Total').textContent = formatNumber(forecast.year10Total);
+            document.getElementById('irr').textContent = forecast.roi.irr + '%';
+            document.getElementById('payback').textContent = forecast.paybackYears;
+
+            // Update ROI breakdown
+            document.getElementById('roiInvestment').textContent = formatCurrency(forecast.roi.investment);
+            document.getElementById('roiRevenue').textContent = formatCurrency(forecast.roi.revenue);
+            document.getElementById('roiCosts').textContent = formatCurrency(forecast.roi.costs);
+            document.getElementById('roiProfit').textContent = formatCurrency(forecast.roi.profit);
+            document.getElementById('roiPercent').textContent = forecast.roi.percent + '%';
+
+            // Update comparable stations
+            const comparableList = document.getElementById('comparableList');
+            comparableList.innerHTML = forecast.comparableStations.map(station => `
+                <div class="station-item">
+                    <div>
+                        <div class="station-name">${station.name}</div>
+                        <div style="font-size: 0.85em; color: #888;">${station.distance} away</div>
+                    </div>
+                    <div class="station-sessions">${station.sessions} sessions/day</div>
+                </div>
+            `).join('');
+
+            // Create projection chart
+            const ctx1 = document.getElementById('projectionChart').getContext('2d');
+            if (projectionChart) projectionChart.destroy();
+            
+            projectionChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 10}, (_, i) => `Year ${i + 1}`),
+                    datasets: [{
+                        label: 'Annual Sessions',
+                        data: forecast.projections,
+                        borderColor: '#F8B918',
+                        backgroundColor: 'rgba(248, 185, 24, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#F8B918',
+                        pointBorderColor: '#F8B918',
+                        pointHoverBackgroundColor: '#28282D',
+                        pointHoverBorderColor: '#F8B918'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatNumber(value);
+                                },
+                                color: '#69696C'
+                            },
+                            grid: {
+                                color: '#E9E9EA'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#69696C'
+                            },
+                            grid: {
+                                color: '#E9E9EA'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Create revenue chart
+            const ctx2 = document.getElementById('revenueChart').getContext('2d');
+            if (revenueChart) revenueChart.destroy();
+            
+            revenueChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 10}, (_, i) => `Year ${i + 1}`),
+                    datasets: [{
+                        label: 'Annual Revenue',
+                        data: forecast.revenues,
+                        backgroundColor: '#28282D',
+                        borderColor: '#28282D',
+                        borderWidth: 0,
+                        hoverBackgroundColor: '#F8B918'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                },
+                                color: '#69696C'
+                            },
+                            grid: {
+                                color: '#E9E9EA'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#69696C'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Hide loading, show results
+            document.getElementById('loading').classList.remove('show');
+            document.getElementById('results').classList.add('show');
+
+            // Smooth scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
+        // Handle fine-tune form submission
+        document.getElementById('fineTuneForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Get fine-tune values
+            const retailBasket = parseFloat(document.getElementById('retailBasketFT').value);
+            const retailConversion = parseFloat(document.getElementById('retailConversionFT').value) / 100;
+            const demandCharge = parseFloat(document.getElementById('demandChargeFT').value);
+            const grantEligible = document.getElementById('grantEligibleFT').value === 'yes';
+
+            // Fixed configuration
+            const stationType = 'dcfc';
+            const numChargers = 4;
+            const pricing = 0.50;
+
+            // Show loading
+            document.getElementById('loading').classList.add('show');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Simulate processing delay
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            // Generate updated forecast
+            const forecast = generateForecast(lastAddress, stationType, numChargers, pricing, retailBasket, retailConversion, grantEligible, demandCharge);
+
+            // Update all displays (reuse the same update logic)
+            document.getElementById('dailySessions').textContent = forecast.dailySessions;
+            document.getElementById('year1Total').textContent = formatNumber(forecast.year1Total);
+            document.getElementById('year10Total').textContent = formatNumber(forecast.year10Total);
+            document.getElementById('irr').textContent = forecast.roi.irr + '%';
+            document.getElementById('payback').textContent = forecast.paybackYears;
+
+            document.getElementById('roiInvestment').textContent = formatCurrency(forecast.roi.investment);
+            document.getElementById('roiRevenue').textContent = formatCurrency(forecast.roi.revenue);
+            document.getElementById('roiCosts').textContent = formatCurrency(forecast.roi.costs);
+            document.getElementById('roiProfit').textContent = formatCurrency(forecast.roi.profit);
+            document.getElementById('roiPercent').textContent = forecast.roi.percent + '%';
+
+            const comparableList = document.getElementById('comparableList');
+            comparableList.innerHTML = forecast.comparableStations.map(station => `
+                <div class="station-item">
+                    <div>
+                        <div class="station-name">${station.name}</div>
+                        <div style="font-size: 0.85em; color: #888;">${station.distance} away</div>
+                    </div>
+                    <div class="station-sessions">${station.sessions} sessions/day</div>
+                </div>
+            `).join('');
+
+            // Update projection chart
+            if (projectionChart) projectionChart.destroy();
+            const ctx1 = document.getElementById('projectionChart').getContext('2d');
+            projectionChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 10}, (_, i) => `Year ${i + 1}`),
+                    datasets: [{
+                        label: 'Annual Sessions',
+                        data: forecast.projections,
+                        borderColor: '#F8B918',
+                        backgroundColor: 'rgba(248, 185, 24, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#F8B918',
+                        pointBorderColor: '#F8B918',
+                        pointHoverBackgroundColor: '#28282D',
+                        pointHoverBorderColor: '#F8B918'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: function(value) { return formatNumber(value); }, color: '#69696C' },
+                            grid: { color: '#E9E9EA' }
+                        },
+                        x: { ticks: { color: '#69696C' }, grid: { color: '#E9E9EA' } }
+                    }
+                }
+            });
+
+            // Update revenue chart
+            if (revenueChart) revenueChart.destroy();
+            const ctx2 = document.getElementById('revenueChart').getContext('2d');
+            revenueChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 10}, (_, i) => `Year ${i + 1}`),
+                    datasets: [{
+                        label: 'Annual Revenue',
+                        data: forecast.revenues,
+                        backgroundColor: '#28282D',
+                        borderColor: '#28282D',
+                        borderWidth: 0,
+                        hoverBackgroundColor: '#F8B918'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: function(value) { return formatCurrency(value); }, color: '#69696C' },
+                            grid: { color: '#E9E9EA' }
+                        },
+                        x: { ticks: { color: '#69696C' }, grid: { display: false } }
+                    }
+                }
+            });
+
+            // Hide loading, show results
+            document.getElementById('loading').classList.remove('show');
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
+        // Handle Buy Now / Get Quote button
+        document.addEventListener('DOMContentLoaded', function() {
+            const buyNowBtn = document.getElementById('buyNowBtn');
+            if (buyNowBtn) {
+                buyNowBtn.addEventListener('click', function() {
+                    generateQuote();
+                });
+            }
+        });
+
+        function generateQuote() {
+            // Get current forecast data
+            const address = lastAddress;
+            const sessions = document.getElementById('dailySessions').textContent;
+            const year1 = document.getElementById('year1Total').textContent;
+            const irr = document.getElementById('irr').textContent;
+            const payback = document.getElementById('payback').textContent;
+            const investment = document.getElementById('roiInvestment').textContent;
+            const profit = document.getElementById('roiProfit').textContent;
+
+            // Create quote content
+            const quoteContent = `
+ELECTRIC ERA - EV CHARGING STATION QUOTE
+==========================================
+
+Site Location: ${address}
+
+STATION CONFIGURATION
+---------------------
+• Level 3 DC Fast Charging (200+ kW)
+• 4 Charging Stalls
+• $0.50/kWh pricing
+
+FORECAST SUMMARY
+----------------
+• Daily Sessions (Year 1): ${sessions}
+• Annual Sessions (Year 1): ${year1}
+• 10-Year IRR: ${irr}
+• Payback Period: ${payback} years
+
+FINANCIAL SUMMARY
+-----------------
+• Initial Investment: ${investment}
+• 10-Year Net Profit: ${profit}
+
+This quote is based on our proprietary forecasting model using comparable station data 
+and your site's specific characteristics.
+
+NEXT STEPS
+----------
+Contact Electric Era to finalize your custom quote and begin installation planning.
+
+Email: sales@electricera.com
+Phone: (555) 123-4567
+Web: www.electricera.com
+
+Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}
+            `.trim();
+
+            // Create downloadable quote
+            const blob = new Blob([quoteContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ElectricEra_Quote_${address.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            // Show confirmation
+            alert('Your quote has been generated and downloaded! An Electric Era representative will contact you shortly to discuss next steps.');
+        }
+    </script>
+</body>
+</html>
