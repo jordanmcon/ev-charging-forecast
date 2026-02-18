@@ -839,6 +839,31 @@
         let lastAddress = '';
         let lastForecastData = null;
 
+        // Database tracking configuration
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/a/macros/electriceratechnologies.com/s/AKfycbx_CncWTcbjfK94TwGh8qwEiOU7yZ9ARFdIDPl_K-MrBFK6PzQmTatqPlIleISJa5sxhQ/exec';
+
+        // Track user inputs to database
+        async function trackToDatabase(data) {
+            if (!GOOGLE_APPS_SCRIPT_URL) {
+                console.log('Database tracking not configured');
+                return;
+            }
+
+            try {
+                await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                console.log('Data tracked successfully');
+            } catch (error) {
+                console.error('Error tracking data:', error);
+            }
+        }
+
         // Display map with address location and 1-mile radius
         async function displayMap(address) {
             // Geocode the address using OpenStreetMap Nominatim (free, no API key needed)
@@ -967,6 +992,19 @@
             document.getElementById('roiCosts').textContent = formatCurrency(forecast.roi.costs);
             document.getElementById('roiProfit').textContent = formatCurrency(forecast.roi.profit);
             document.getElementById('roiPercent').textContent = forecast.roi.percent + '%';
+
+            // Track initial forecast to database
+            trackToDatabase({
+                address: address,
+                dailySessions: forecast.dailySessions,
+                year1Total: forecast.year1Total,
+                irr: forecast.roi.irr,
+                payback: forecast.paybackYears,
+                retailBasket: 12, // default
+                retailConversion: 40, // default
+                demandCharge: 0, // default
+                grantEligible: 'No' // default
+            });
 
             // Update comparable stations
             const comparableList = document.getElementById('comparableList');
@@ -1115,6 +1153,19 @@
 
             // Generate updated forecast
             const forecast = generateForecast(lastAddress, stationType, numChargers, pricing, retailBasket, retailConversion, grantEligible, demandCharge);
+
+            // Track fine-tuned forecast to database
+            trackToDatabase({
+                address: lastAddress,
+                dailySessions: forecast.dailySessions,
+                year1Total: forecast.year1Total,
+                irr: forecast.roi.irr,
+                payback: forecast.paybackYears,
+                retailBasket: retailBasket,
+                retailConversion: retailConversion * 100,
+                demandCharge: demandCharge,
+                grantEligible: grantEligible ? 'Yes' : 'No'
+            });
 
             // Update all displays (reuse the same update logic)
             document.getElementById('dailySessions').textContent = forecast.dailySessions;
