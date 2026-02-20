@@ -840,7 +840,7 @@
         let lastForecastData = null;
 
         // Database tracking configuration
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_CncWTcbjfK94TwGh8qwEiOU7yZ9ARFdIDPl_K-MrBFK6PzQmTatqPlIleISJa5sxhQ/exec';
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/a/macros/electriceratechnologies.com/s/AKfycbx_CncWTcbjfK94TwGh8qwEiOU7yZ9ARFdIDPl_K-MrBFK6PzQmTatqPlIleISJa5sxhQ/exec';
 
         // Track user inputs to database
         async function trackToDatabase(data) {
@@ -880,18 +880,35 @@
                     // Update address display
                     document.getElementById('mapAddress').textContent = data[0].display_name;
                     
-                    // Initialize or update map
+                    // Remove existing map if present
                     if (map) {
                         map.remove();
+                        map = null;
                     }
                     
-                    map = L.map('map').setView([lat, lon], 11);
+                    // Small delay to ensure container is ready
+                    await new Promise(resolve => setTimeout(resolve, 100));
                     
-                    // Add OpenStreetMap tiles
+                    // Initialize map
+                    map = L.map('map', {
+                        center: [lat, lon],
+                        zoom: 13,
+                        scrollWheelZoom: false
+                    });
+                    
+                    // Add OpenStreetMap tiles with error handling
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '© OpenStreetMap contributors',
-                        maxZoom: 19
+                        maxZoom: 19,
+                        errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
                     }).addTo(map);
+                    
+                    // Force map to redraw
+                    setTimeout(() => {
+                        if (map) {
+                            map.invalidateSize();
+                        }
+                    }, 200);
                     
                     // Add marker for the site location with Electric Era branding
                     const customIcon = L.divIcon({
