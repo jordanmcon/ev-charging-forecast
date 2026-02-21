@@ -1253,6 +1253,15 @@
 
             // Smooth scroll to results
             document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            } catch (error) {
+                console.error('Error in form submission:', error);
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('errorTitle').textContent = 'Error';
+                document.getElementById('errorDescription').textContent = 'An unexpected error occurred. Please try again or contact support. Error: ' + error.message;
+                document.getElementById('errorMessage').style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         });
 
         // Handle fine-tune form submission
