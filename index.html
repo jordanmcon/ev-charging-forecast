@@ -624,22 +624,35 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // ROI calculation based on your Google Sheets model
-        function generateForecast(address, stationType, numChargers, pricing, retailBasket = 12, retailConversion = 0.40, grantEligible = false, demandCharge = 0) {
-            // INTEGRATION POINT: Replace this with actual API call to your Paren tool
-            // Example: const response = await fetch('/api/forecast', { method: 'POST', body: ... })
-            
-            // Mock comparable stations (your tool will return real ones)
-            const comparableStations = [
-                { name: "Downtown Plaza Station", distance: "2.3 mi", sessions: 47 },
-                { name: "Metro Center Charging Hub", distance: "3.1 mi", sessions: 52 },
-                { name: "Riverside Shopping Center", distance: "4.5 mi", sessions: 41 },
-                { name: "Tech Campus Station", distance: "5.2 mi", sessions: 38 },
-                { name: "University District Hub", distance: "6.1 mi", sessions: 44 }
-            ];
+        function generateForecast(address, stationType, numChargers, pricing, retailBasket = 12, retailConversion = 0.40, grantEligible = false, demandCharge = 0, hexagonData = null) {
+            // Use real hexagon data if provided, otherwise use mock data
+            let baselineDailySessions;
+            let comparableStations;
 
-            // Calculate baseline from comparable stations (your tool does this)
-            const avgSessions = comparableStations.reduce((sum, s) => sum + s.sessions, 0) / comparableStations.length;
-            const baselineDailySessions = Math.round(avgSessions);
+            if (hexagonData) {
+                // REAL DATA from your hexagon
+                baselineDailySessions = Math.round(hexagonData.daily_sessions);
+                
+                // Generate comparable stations from nearby hexagons (mock for now - can be enhanced)
+                comparableStations = [
+                    { name: "Nearby Station A", distance: "2.1 mi", sessions: baselineDailySessions + 2 },
+                    { name: "Nearby Station B", distance: "3.5 mi", sessions: baselineDailySessions - 3 },
+                    { name: "Nearby Station C", distance: "4.2 mi", sessions: baselineDailySessions + 1 },
+                    { name: "Nearby Station D", distance: "5.8 mi", sessions: baselineDailySessions - 1 },
+                    { name: "Nearby Station E", distance: "6.4 mi", sessions: baselineDailySessions }
+                ];
+            } else {
+                // MOCK DATA (fallback)
+                comparableStations = [
+                    { name: "Downtown Plaza Station", distance: "2.3 mi", sessions: 47 },
+                    { name: "Metro Center Charging Hub", distance: "3.1 mi", sessions: 52 },
+                    { name: "Riverside Shopping Center", distance: "4.5 mi", sessions: 41 },
+                    { name: "Tech Campus Station", distance: "5.2 mi", sessions: 38 },
+                    { name: "University District Hub", distance: "6.1 mi", sessions: 44 }
+                ];
+                const avgSessions = comparableStations.reduce((sum, s) => sum + s.sessions, 0) / comparableStations.length;
+                baselineDailySessions = Math.round(avgSessions);
+            }
             
             // === CAPEX CALCULATION (from your spreadsheet) ===
             // Tiered pricing based on sessions per day
@@ -838,9 +851,61 @@
         let map = null;
         let lastAddress = '';
         let lastForecastData = null;
+        let hexagonData = null; // Will store the loaded hexagon data
 
         // Database tracking configuration
         const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/a/macros/electriceratechnologies.com/s/AKfycbx_CncWTcbjfK94TwGh8qwEiOU7yZ9ARFdIDPl_K-MrBFK6PzQmTatqPlIleISJa5sxhQ/exec';
+
+        // Load hexagon data on page load
+        async function loadHexagonData() {
+            try {
+                const response = await fetch('hexagon_lookup.json');
+                hexagonData = await response.json();
+                console.log(`Loaded ${hexagonData.hexagons.length} hexagons`);
+            } catch (error) {
+                console.error('Error loading hexagon data:', error);
+            }
+        }
+
+        // Find nearest hexagon to a lat/lon point
+        function findNearestHexagon(lat, lon) {
+            if (!hexagonData || !hexagonData.hexagons) {
+                console.error('Hexagon data not loaded');
+                return null;
+            }
+
+            let nearest = null;
+            let minDistance = Infinity;
+
+            // Calculate distance using Haversine formula
+            for (const hex of hexagonData.hexagons) {
+                const distance = getDistance(lat, lon, hex.lat, hex.lon);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearest = hex;
+                }
+            }
+
+            return nearest;
+        }
+
+        // Calculate distance between two lat/lon points (in km)
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        // Load hexagon data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadHexagonData();
+        });
 
         // Track user inputs to database
         async function trackToDatabase(data) {
@@ -985,6 +1050,31 @@
                 return;
             }
 
+            // Get lat/lon from geocoding for hexagon lookup
+            const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+            const geoResponse = await fetch(geocodeUrl);
+            const geoData = await geoResponse.json();
+            const userLat = parseFloat(geoData[0].lat);
+            const userLon = parseFloat(geoData[0].lon);
+
+            // Find nearest hexagon
+            const nearestHex = findNearestHexagon(userLat, userLon);
+            
+            if (!nearestHex) {
+                // No hexagon data available
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('errorTitle').textContent = 'Insufficient Data';
+                document.getElementById('errorDescription').textContent = 'We don\'t have forecast data for this location yet. Please try a location in our coverage area.';
+                document.getElementById('errorMessage').style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            console.log(`Found hexagon: ${nearestHex.hex_id}, Sessions: ${nearestHex.daily_sessions}`);
+
+            // Generate forecast with real hexagon data
+            const forecast = generateForecast(address, stationType, numChargers, pricing, retailBasket, retailConversion, grantEligible, 0, nearestHex);
+
             // Check if payback period is greater than 10 years
             if (parseFloat(forecast.paybackYears) > 10) {
                 // Insufficient data / poor ROI
@@ -995,6 +1085,10 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
+
+            // Store for fine-tuning
+            lastAddress = address;
+            lastForecastData = forecast;
 
             // Update stats
             document.getElementById('dailySessions').textContent = forecast.dailySessions;
