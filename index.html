@@ -859,11 +859,25 @@
         // Load hexagon data on page load
         async function loadHexagonData() {
             try {
-                const response = await fetch('hexagon_lookup.json');
+                // Try multiple possible paths
+                let response;
+                try {
+                    response = await fetch('hexagon_lookup.json');
+                } catch (e) {
+                    response = await fetch('./hexagon_lookup.json');
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 hexagonData = await response.json();
-                console.log(`Loaded ${hexagonData.hexagons.length} hexagons`);
+                console.log(`✅ Loaded ${hexagonData.hexagons.length} hexagons`);
+                return true;
             } catch (error) {
-                console.error('Error loading hexagon data:', error);
+                console.error('❌ Error loading hexagon data:', error);
+                console.log('Will use fallback mock data');
+                return false;
             }
         }
 
@@ -1010,31 +1024,32 @@
         // Handle form submission
         document.getElementById('forecastForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            e.stopPropagation();
 
-            const address = document.getElementById('address').value;
-            // Fixed configuration: Level 3 DCFC, 4 chargers, $0.50/kWh
-            const stationType = 'dcfc';
-            const numChargers = 4;
-            const pricing = 0.50;
-            // Fixed retail assumptions
-            const retailBasket = 12;
-            const retailConversion = 0.40; // 40%
-            const grantEligible = false; // No grant funding
+            try {
+                const address = document.getElementById('address').value;
+                
+                if (!address || address.trim() === '') {
+                    alert('Please enter an address');
+                    return false;
+                }
 
-            // Show loading
-            document.getElementById('loading').classList.add('show');
-            document.getElementById('results').classList.remove('show');
-            document.getElementById('errorMessage').style.display = 'none';
+                // Fixed configuration: Level 3 DCFC, 4 chargers, $0.50/kWh
+                const stationType = 'dcfc';
+                const numChargers = 4;
+                const pricing = 0.50;
+                // Fixed retail assumptions
+                const retailBasket = 12;
+                const retailConversion = 0.40; // 40%
+                const grantEligible = false; // No grant funding
 
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
+                // Show loading
+                document.getElementById('loading').classList.add('show');
+                document.getElementById('results').classList.remove('show');
+                document.getElementById('errorMessage').style.display = 'none';
 
-            // Generate forecast
-            const forecast = generateForecast(address, stationType, numChargers, pricing, retailBasket, retailConversion, grantEligible, 0);
-
-            // Store for fine-tuning
-            lastAddress = address;
-            lastForecastData = forecast;
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
 
             // Geocode the address and display map
             const locationFound = await displayMap(address);
