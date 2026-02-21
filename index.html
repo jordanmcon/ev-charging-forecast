@@ -859,24 +859,34 @@
         // Load hexagon data on page load
         async function loadHexagonData() {
             try {
-                // Try multiple possible paths
-                let response;
-                try {
-                    response = await fetch('hexagon_lookup.json');
-                } catch (e) {
-                    response = await fetch('./hexagon_lookup.json');
-                }
+                console.log('🔄 Loading hexagon data...');
+                
+                // Try to fetch the file
+                const response = await fetch('hexagon_lookup.json');
+                console.log('Response status:', response.status);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
-                hexagonData = await response.json();
-                console.log(`✅ Loaded ${hexagonData.hexagons.length} hexagons`);
+                // Get the JSON
+                const jsonData = await response.json();
+                console.log('JSON loaded, structure:', Object.keys(jsonData));
+                
+                // Validate structure
+                if (!jsonData || !jsonData.hexagons || !Array.isArray(jsonData.hexagons)) {
+                    throw new Error('Invalid JSON structure - missing hexagons array');
+                }
+                
+                hexagonData = jsonData;
+                console.log(`✅ Successfully loaded ${hexagonData.hexagons.length} hexagons`);
+                console.log('Sample hexagon:', hexagonData.hexagons[0]);
                 return true;
+                
             } catch (error) {
                 console.error('❌ Error loading hexagon data:', error);
                 console.log('Will use fallback mock data');
+                hexagonData = null;
                 return false;
             }
         }
