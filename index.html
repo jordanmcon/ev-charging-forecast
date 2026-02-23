@@ -603,7 +603,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // ROI calculation based on your Google Sheets model
-        function generateForecast(address, stationType, numChargers, pricing, retailBasket = 12, retailConversion = 0.40, grantEligible = false, demandCharge = 0, hexagonData = null) {
+        function generateForecast(address, stationType, numChargers, pricing, retailBasket = 0, retailConversion = 0.0, grantEligible = false, demandCharge = 0, hexagonData = null) {
             // Use real hexagon data if provided, otherwise use mock data
             let baselineDailySessions;
             let comparableStations;
@@ -639,17 +639,17 @@
             
             if (baselineDailySessions < 30) {
                 // 4 stalls tier
-                hardwareCapEx = 333650;
-                constructionCost = 180000;
+                hardwareCapEx = 200000;
+                constructionCost = 200000;
                 softwareOM = 42000;
             } else if (baselineDailySessions < 60) {
                 // 6 stalls tier
-                hardwareCapEx = 433650;
-                constructionCost = 180000;
+                hardwareCapEx = 300000;
+                constructionCost = 200000;
                 softwareOM = 63000;
             } else {
                 // 8+ stalls tier
-                hardwareCapEx = 579000;
+                hardwareCapEx = 400000;
                 constructionCost = 180000;
                 softwareOM = 84000;
             }
