@@ -535,14 +535,6 @@
                 </div>
             </div>
 
-            <div class="comparable-stations">
-                <h3 class="chart-title">Comparable Stations Used in Analysis</h3>
-                <p style="color: #69696C; margin-bottom: 20px; font-size: 0.9em;">
-                    These existing stations have similar characteristics to your proposed location and inform our forecast.
-                </p>
-                <div id="comparableList"></div>
-            </div>
-
             <div class="fine-tune-section">
                 <div class="fine-tune-header">
                     <h3 class="chart-title">Fine-Tune Your Forecast</h3>
@@ -558,13 +550,13 @@
                     <div class="fine-tune-grid">
                         <div class="form-group">
                             <label for="retailBasketFT">Retail Basket Size ($)</label>
-                            <input type="number" id="retailBasketFT" value="12" step="0.50" min="0">
+                            <input type="number" id="retailBasketFT" value="0" step="0.50" min="0">
                             <div class="input-hint">Average in-store purchase per charging session</div>
                         </div>
 
                         <div class="form-group">
                             <label for="retailConversionFT">In-Store Conversion (%)</label>
-                            <input type="number" id="retailConversionFT" value="40" min="0" max="100">
+                            <input type="number" id="retailConversionFT" value="0" min="0" max="100">
                             <div class="input-hint">Percentage of EV customers who shop inside</div>
                         </div>
 
@@ -871,7 +863,10 @@
                 
                 // Get the JSON
                 const jsonData = await response.json();
-                console.log('JSON loaded, structure:', Object.keys(jsonData));
+                console.log('JSON loaded, type:', typeof jsonData);
+                console.log('Is array?', Array.isArray(jsonData));
+                console.log('Structure:', Object.keys(jsonData));
+                console.log('First 200 chars of response:', JSON.stringify(jsonData).substring(0, 200));
                 
                 // Validate structure
                 if (!jsonData || !jsonData.hexagons || !Array.isArray(jsonData.hexagons)) {
@@ -1142,18 +1137,6 @@
                 grantEligible: 'No' // default
             });
 
-            // Update comparable stations
-            const comparableList = document.getElementById('comparableList');
-            comparableList.innerHTML = forecast.comparableStations.map(station => `
-                <div class="station-item">
-                    <div>
-                        <div class="station-name">${station.name}</div>
-                        <div style="font-size: 0.85em; color: #888;">${station.distance} away</div>
-                    </div>
-                    <div class="station-sessions">${station.sessions} sessions/day</div>
-                </div>
-            `).join('');
-
             // Create projection chart
             const ctx1 = document.getElementById('projectionChart').getContext('2d');
             if (projectionChart) projectionChart.destroy();
@@ -1324,17 +1307,6 @@
             document.getElementById('roiCosts').textContent = formatCurrency(forecast.roi.costs);
             document.getElementById('roiProfit').textContent = formatCurrency(forecast.roi.profit);
             document.getElementById('roiPercent').textContent = forecast.roi.percent + '%';
-
-            const comparableList = document.getElementById('comparableList');
-            comparableList.innerHTML = forecast.comparableStations.map(station => `
-                <div class="station-item">
-                    <div>
-                        <div class="station-name">${station.name}</div>
-                        <div style="font-size: 0.85em; color: #888;">${station.distance} away</div>
-                    </div>
-                    <div class="station-sessions">${station.sessions} sessions/day</div>
-                </div>
-            `).join('');
 
             // Update projection chart
             if (projectionChart) projectionChart.destroy();
