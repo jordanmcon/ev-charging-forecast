@@ -430,13 +430,8 @@
         <div class="input-card">
             <form id="forecastForm">
                 <div class="form-group">
-                    <label for="address">Site Address</label>
+                    <label for="address">Site Address (include City, State)</label>
                     <input type="text" id="address" placeholder="123 Main Street, San Francisco, CA" required>
-                </div>
-
-                <div class="config-info">
-                    <div class="config-label">Station Configuration</div>
-                    <div class="config-details">Level 3 DC Fast Charging (200+ kW) • 4 Chargers • $0.50/kWh</div>
                 </div>
 
                 <div class="button-group">
@@ -542,7 +537,7 @@
                         Adjust these parameters to see how they impact your ROI
                     </p>
                     <p style="background: #FEF1D1; border-left: 4px solid #F8B918; padding: 12px 16px; border-radius: 6px; font-size: 0.9em; color: #535357; margin-bottom: 20px;">
-                        <strong>Note:</strong> The initial forecast above uses default conservative assumptions. These advanced inputs were not considered in your initial results.
+                        <strong>Note:</strong> These advanced inputs were not considered in your initial results.
                     </p>
                 </div>
                 
@@ -572,7 +567,7 @@
                                 <option value="no">No</option>
                                 <option value="yes">Yes (25% CapEx reduction)</option>
                             </select>
-                            <div class="input-hint">Eligible if you own property, in rural/underserved area</div>
+                            <div class="input-hint">You may be eligible if you own property, especially in rural/underserved area</div>
                         </div>
                     </div>
 
@@ -585,31 +580,18 @@
             <div class="methodology">
                 <h3>📊 How This Works</h3>
                 <p>
-                    Our forecast analyzes your proposed <strong>Level 3 DC Fast Charging site (200+ kW, 4 chargers)</strong> 
-                    using your in-house Paren EV session data to identify comparable charging stations 
+                    This calculator is for illustrative estimates only. Actual results will vary based on utility rates, site conditions, location-specific incentives, and real-world charging demand. These figures are not a guarantee of financial performance.
+                    Our forecast analyzes your proposed <strong>Level 3 DC Fast Charging site</strong> 
+                    using Paren EV session data to identify comparable charging stations 
                     with similar demographics, traffic patterns, and location characteristics. We then apply 
                     regional EV adoption growth rates (averaging 10% annual growth) to project future demand. 
                     The ROI calculation includes tiered CapEx based on utilization, Section 48E tax credits ($65k), 
-                    optional grant eligibility (25% CapEx reduction), incremental retail revenue from in-store 
-                    purchases, battery-enabled demand charge mitigation (70%), and comprehensive operating costs. 
+                    optional grant eligibility (25% CapEx reduction), and comprehensive operating costs. 
                     Financial metrics include IRR, payback period, and 10-year net profit projections.
                 </p>
             </div>
 
-            <div class="cta-section">
-                <h3 style="font-size: 1.8em; color: #28282D; font-weight: 600; margin-bottom: 12px; text-align: center;">Ready to Move Forward?</h3>
-                <p style="color: #69696C; font-size: 1.05em; text-align: center; margin-bottom: 24px;">
-                    Get a detailed quote based on your forecast and start your EV charging station project.
-                </p>
-                <div style="text-align: center;">
-                    <button id="buyNowBtn" style="background: #F8B918; color: #28282D; padding: 18px 48px; border-radius: 8px; font-weight: 700; font-size: 1.15em; cursor: pointer; border: none; transition: all 0.2s; box-shadow: 0 4px 12px rgba(248, 185, 24, 0.3);">
-                        Get a Quote →
-                    </button>
-                </div>
-                <p style="color: #A9A9AB; font-size: 0.85em; text-align: center; margin-top: 16px;">
-                    Your personalized quote will be generated instantly and downloaded to your device.
-                </p>
-            </div>
+           
         </div>
     </div>
 
