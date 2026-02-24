@@ -6,6 +6,7 @@
     <title>EV Charging Station Forecaster</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
     <style>
         * {
             margin: 0;
@@ -835,7 +836,7 @@
 
         // Database tracking configuration
         const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwdb7Q3odA0ogtcyhUOCMihH5JzGR4ZzwGSkzZmJBd48JmgAnpINa47vs8PE7YtoTf0zA/exec';
-
+        
         // Load hexagon data on page load
         async function loadHexagonData() {
             try {
@@ -864,6 +865,7 @@
                 hexagonData = jsonData;
                 console.log(`✅ Successfully loaded ${hexagonData.hexagons.length} hexagons`);
                 console.log('Sample hexagon:', hexagonData.hexagons[0]);
+                console.log('💡 H3 library will convert Grid IDs to lat/lon coordinates');
                 return true;
                 
             } catch (error) {
@@ -884,12 +886,27 @@
             let nearest = null;
             let minDistance = Infinity;
 
-            // Calculate distance using Haversine formula
+            // For each hexagon, get its center using H3 library
             for (const hex of hexagonData.hexagons) {
-                const distance = getDistance(lat, lon, hex.lat, hex.lon);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    nearest = hex;
+                try {
+                    // Use H3 library to convert Grid ID to lat/lon
+                    const [hexLat, hexLon] = h3.cellToLatLng(hex.hex_id);
+                    
+                    // Calculate distance
+                    const distance = getDistance(lat, lon, hexLat, hexLon);
+                    
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        // Add the coordinates to the hex object for later use
+                        nearest = {
+                            ...hex,
+                            lat: hexLat,
+                            lon: hexLon
+                        };
+                    }
+                } catch (error) {
+                    // Skip hexagons with invalid IDs
+                    console.warn(`Invalid H3 ID: ${hex.hex_id}`);
                 }
             }
 
