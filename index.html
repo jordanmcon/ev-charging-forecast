@@ -833,7 +833,7 @@
         let hexagonData = null; // Will store the loaded hexagon data
 
         // Database tracking configuration
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3StA46mJVsD3deh0n2zp_zVbD8XKMUGR6I3prUhqPRhMdW4Pxz9OtiT5xbf4XK4pYbw/exec';
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/a/macros/electriceratechnologies.com/s/AKfycbx_CncWTcbjfK94TwGh8qwEiOU7yZ9ARFdIDPl_K-MrBFK6PzQmTatqPlIleISJa5sxhQ/exec';
 
         // Load hexagon data on page load
         async function loadHexagonData() {
@@ -1249,15 +1249,18 @@
             e.preventDefault();
 
             // Get fine-tune values
-            const retailBasket = parseFloat(document.getElementById('retailBasketFT').value);
-            const retailConversion = parseFloat(document.getElementById('retailConversionFT').value) / 100;
+            const chargingPrice = parseFloat(document.getElementById('chargingPriceFT').value);
+            const electricityPrice = parseFloat(document.getElementById('electricityPriceFT').value);
             const demandCharge = parseFloat(document.getElementById('demandChargeFT').value);
             const grantEligible = document.getElementById('grantEligibleFT').value === 'yes';
 
             // Fixed configuration
             const stationType = 'dcfc';
             const numChargers = 4;
-            const pricing = 0.50;
+            
+            // Fixed retail assumptions (not user-editable anymore)
+            const retailBasket = 12;
+            const retailConversion = 0.40;
 
             // Show loading
             document.getElementById('loading').classList.add('show');
@@ -1266,8 +1269,8 @@
             // Simulate processing delay
             await new Promise(resolve => setTimeout(resolve, 800));
 
-            // Generate updated forecast
-            const forecast = generateForecast(lastAddress, stationType, numChargers, pricing, retailBasket, retailConversion, grantEligible, demandCharge);
+            // Generate updated forecast with user's pricing inputs
+            const forecast = generateForecast(lastAddress, stationType, numChargers, chargingPrice, retailBasket, retailConversion, grantEligible, demandCharge, null, electricityPrice);
 
             // Track fine-tuned forecast to database
             trackToDatabase({
@@ -1276,8 +1279,8 @@
                 year1Total: forecast.year1Total,
                 irr: forecast.roi.irr,
                 payback: forecast.paybackYears,
-                retailBasket: retailBasket,
-                retailConversion: retailConversion * 100,
+                chargingPrice: chargingPrice,
+                electricityPrice: electricityPrice,
                 demandCharge: demandCharge,
                 grantEligible: grantEligible ? 'Yes' : 'No'
             });
