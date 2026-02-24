@@ -921,8 +921,10 @@
                 return;
             }
 
+            console.log('📊 Sending to database:', data);
+
             try {
-                await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: {
@@ -930,9 +932,9 @@
                     },
                     body: JSON.stringify(data)
                 });
-                console.log('Data tracked successfully');
+                console.log('✅ Data sent successfully');
             } catch (error) {
-                console.error('Error tracking data:', error);
+                console.error('❌ Error tracking data:', error);
             }
         }
 
